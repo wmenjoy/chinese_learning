@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import HanziWriter from 'hanzi-writer';
-import { CharacterData } from '../types/character';
-import { getCharacterData } from '../services/characterService';
+import { queryOllama, CharacterExplanation, SUPPORTED_MODELS, SupportedModel } from '../services/ollamaService';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -12,7 +11,7 @@ const Container = styled.div`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-top: 2rem;
 
@@ -33,6 +32,23 @@ const CharacterInfo = styled.div`
   border-radius: 1rem;
   padding: 2rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    color: #424242;
+    margin-bottom: 1.5rem;
+  }
+
+  h3 {
+    color: #757575;
+    margin: 1rem 0 0.5rem;
+    font-size: 1.1rem;
+  }
+
+  p {
+    color: #616161;
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
 `;
 
 const SearchInput = styled.input`
@@ -59,33 +75,16 @@ const Button = styled.button`
   color: #424242;
   cursor: pointer;
   margin-right: 0.5rem;
-  margin-bottom: 0.5rem;
   transition: background 0.2s;
 
   &:hover {
     background: #FFC107;
   }
-`;
 
-const LoadingSpinner = styled.div`
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #FFD54F;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 2rem auto;
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  &:disabled {
+    background: #E0E0E0;
+    cursor: not-allowed;
   }
-`;
-
-const EtymologySection = styled.div`
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #eee;
 `;
 
 const GridBackground = styled.div`
@@ -103,7 +102,6 @@ const GridBackground = styled.div`
     background: rgba(0, 0, 0, 0.1);
   }
 
-  // 水平线
   &::before {
     top: 50%;
     left: 0;
@@ -112,7 +110,6 @@ const GridBackground = styled.div`
     transform: translateY(-50%);
   }
 
-  // 垂直线
   &::after {
     left: 50%;
     top: 0;
@@ -121,7 +118,6 @@ const GridBackground = styled.div`
     transform: translateX(-50%);
   }
 
-  // 对角线
   .diagonal {
     position: absolute;
     top: 0;
@@ -134,7 +130,7 @@ const GridBackground = styled.div`
       content: '';
       position: absolute;
       background: rgba(0, 0, 0, 0.1);
-      width: 424px; // 300px * √2
+      width: 424px;
       height: 1px;
       top: 50%;
       left: 50%;
@@ -150,12 +146,98 @@ const GridBackground = styled.div`
   }
 `;
 
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #FFD54F;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+  margin: 1rem auto;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const ExamplesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+`;
+
+const ExampleTag = styled.div`
+  background: #E3F2FD;
+  color: #1976D2;
+  padding: 0.5rem;
+  border-radius: 0.3rem;
+  text-align: center;
+  font-size: 0.9rem;
+`;
+
+const EtymologySection = styled.div`
+  background: #F5F5F5;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+`;
+
+const InputContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+`;
+
+const ClearButton = styled.button`
+  background: #E0E0E0;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: #424242;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #BDBDBD;
+  }
+
+  &:disabled {
+    background: #F5F5F5;
+    cursor: not-allowed;
+    color: #9E9E9E;
+  }
+`;
+
+const ModelSelect = styled.select`
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #FFD54F;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  
+  &:focus {
+    outline: none;
+    border-color: #FFC107;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+  }
+`;
+
 const CharacterDictionary: React.FC = () => {
   const [character, setCharacter] = useState<string>('');
   const [inputValue, setInputValue] = useState<string>('');
   const [writer, setWriter] = useState<HanziWriter | null>(null);
-  const [characterData, setCharacterData] = useState<CharacterData | null>(null);
+  const [dictionaryData, setDictionaryData] = useState<CharacterExplanation | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<SupportedModel>('llama3:latest');
   const writerContainerRef = useRef<HTMLDivElement>(null);
 
   // 清理writer实例的函数
@@ -167,23 +249,27 @@ const CharacterDictionary: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchCharacterData = async () => {
+    const fetchData = async () => {
       if (!character) {
-        setCharacterData(null);
+        setDictionaryData(null);
+        setError(null);
         return;
       }
       setLoading(true);
+      setError(null);
       try {
-        const data = await getCharacterData(character);
-        setCharacterData(data);
+        const data = await queryOllama(character, selectedModel);
+        setDictionaryData(data);
       } catch (error) {
         console.error('Error fetching character data:', error);
+        setDictionaryData(null);
+        setError(error instanceof Error ? error.message : '获取汉字信息失败');
       }
       setLoading(false);
     };
 
-    fetchCharacterData();
-  }, [character]);
+    fetchData();
+  }, [character, selectedModel]);
 
   useEffect(() => {
     if (writerContainerRef.current && character) {
@@ -212,7 +298,7 @@ const CharacterDictionary: React.FC = () => {
     // 清空输入框时重置状态
     if (!value) {
       setCharacter('');
-      setCharacterData(null);
+      setDictionaryData(null);
       cleanupWriter();
       return;
     }
@@ -240,16 +326,41 @@ const CharacterDictionary: React.FC = () => {
     }
   };
 
+  const handleClear = () => {
+    setInputValue('');
+    setCharacter('');
+    setDictionaryData(null);
+    cleanupWriter();
+  };
+
   return (
     <Container>
       <h1>汉字词典</h1>
-      <SearchInput
-        type="text"
-        placeholder="输入汉字..."
-        onChange={handleSearch}
-        value={inputValue}
-        autoComplete="off"
-      />
+      <InputContainer>
+        <SearchInput
+          type="text"
+          placeholder="输入汉字..."
+          onChange={handleSearch}
+          value={inputValue}
+          autoComplete="off"
+        />
+        <ClearButton 
+          onClick={handleClear}
+          disabled={!inputValue}
+        >
+          清空
+        </ClearButton>
+      </InputContainer>
+      <ModelSelect
+        value={selectedModel}
+        onChange={(e) => setSelectedModel(e.target.value as SupportedModel)}
+      >
+        {Object.entries(SUPPORTED_MODELS).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </ModelSelect>
       {inputValue.length > 1 && (
         <div style={{ color: '#ff4081', marginBottom: '1rem', fontSize: '0.9rem' }}>
           请输入单个汉字
@@ -293,41 +404,61 @@ const CharacterDictionary: React.FC = () => {
         </CharacterDisplay>
         <CharacterInfo>
           {loading ? (
-            <LoadingSpinner />
-          ) : characterData ? (
+            <div style={{ textAlign: 'center' }}>
+              <LoadingSpinner />
+              <p style={{ marginTop: '1rem', color: '#757575' }}>正在获取汉字信息...</p>
+            </div>
+          ) : error ? (
+            <div style={{ textAlign: 'center', color: '#ff4081', padding: '1rem' }}>
+              <h3>出错了</h3>
+              <p>{error}</p>
+              <p style={{ fontSize: '0.9rem', marginTop: '1rem', color: '#757575' }}>
+                请确保：
+                <br />1. Ollama 服务已启动
+                <br />2. chinese-llama2 模型已安装
+                <br />3. 网络连接正常
+              </p>
+            </div>
+          ) : dictionaryData ? (
             <>
               <h2>汉字信息</h2>
               <div>
                 <h3>拼音</h3>
-                <p>{characterData.pinyin}</p>
-                <h3>部首</h3>
-                <p>{characterData.radical}</p>
-                <h3>笔画数</h3>
-                <p>{characterData.strokeCount}</p>
+                <p>{dictionaryData.pinyin}</p>
                 <h3>释义</h3>
-                {characterData.meanings.map((meaning, index) => (
+                {dictionaryData.meanings.map((meaning, index) => (
                   <p key={index}>{index + 1}. {meaning}</p>
                 ))}
+                <h3>字源</h3>
+                <EtymologySection>
+                  <p>{dictionaryData.etymology}</p>
+                </EtymologySection>
                 <h3>常用词组</h3>
-                <p>{characterData.commonWords.join('、')}</p>
-                {characterData.etymology && (
-                  <EtymologySection>
-                    <h3>字源</h3>
-                    <p>类型：{characterData.etymology.type}</p>
-                    <p>{characterData.etymology.description}</p>
-                    {characterData.etymology.image && (
-                      <img 
-                        src={characterData.etymology.image} 
-                        alt={`${character}的字源图`}
-                        style={{ maxWidth: '200px', marginTop: '1rem' }}
-                      />
-                    )}
-                  </EtymologySection>
+                <ExamplesGrid>
+                  {dictionaryData.examples.map((example, index) => (
+                    <ExampleTag key={index}>{example}</ExampleTag>
+                  ))}
+                </ExamplesGrid>
+                {dictionaryData.components && (
+                  <>
+                    <h3>字形结构</h3>
+                    <p>{dictionaryData.components}</p>
+                  </>
                 )}
               </div>
             </>
           ) : (
-            <p>{character ? '未找到汉字信息' : '请输入要查询的汉字'}</p>
+            <div style={{ textAlign: 'center', color: '#757575', padding: '2rem' }}>
+              <p>请输入要查询的汉字</p>
+              <p style={{ fontSize: '0.9rem', marginTop: '1rem' }}>
+                支持查询：
+                <br />- 拼音
+                <br />- 字义
+                <br />- 字源
+                <br />- 常用词组
+                <br />- 字形结构
+              </p>
+            </div>
           )}
         </CharacterInfo>
       </Grid>

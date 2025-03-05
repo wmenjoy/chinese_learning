@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import HanziWriter from 'hanzi-writer';
+import { queryOllama, CharacterExplanation } from '../services/ollamaService';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -116,13 +117,41 @@ const ButtonGroup = styled.div`
   margin-top: 1rem;
 `;
 
+const InputContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+`;
+
+const ClearButton = styled.button`
+  background: #E0E0E0;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: #424242;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #BDBDBD;
+  }
+
+  &:disabled {
+    background: #F5F5F5;
+    cursor: not-allowed;
+    color: #9E9E9E;
+  }
+`;
+
 const Input = styled.input`
-  width: 100%;
+  flex: 1;
   padding: 0.75rem;
   border: 2px solid #FFD54F;
   border-radius: 0.5rem;
   font-size: 1.25rem;
-  margin-bottom: 1rem;
   
   &:focus {
     outline: none;
@@ -145,10 +174,88 @@ const STROKE_COLORS = [
   '#546E7A', // 蓝灰
 ];
 
+const DictionarySection = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const DictionaryContent = styled.div`
+  h3 {
+    color: #424242;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+  }
+
+  .pinyin {
+    color: #FF4081;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .meanings {
+    margin-bottom: 1rem;
+    
+    li {
+      margin-bottom: 0.5rem;
+      color: #616161;
+    }
+  }
+
+  .etymology {
+    background: #F5F5F5;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    color: #757575;
+  }
+
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    
+    span {
+      background: #E3F2FD;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.3rem;
+      color: #1976D2;
+    }
+  }
+
+  .components {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #E0E0E0;
+    color: #616161;
+  }
+`;
+
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #FFD54F;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+  margin: 1rem auto;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
 const CharacterLearning: React.FC = () => {
   const [currentCharacter, setCurrentCharacter] = useState<string>('字');
   const [inputValue, setInputValue] = useState<string>('字');
   const [writers, setWriters] = useState<HanziWriter[]>([]);
+  const [dictionaryData, setDictionaryData] = useState<CharacterExplanation | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const strokeGridsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -420,12 +527,27 @@ const CharacterLearning: React.FC = () => {
   const handleStrokeByStroke = async () => {
     if (!containerRef.current || !currentCharacter || !strokeGridsContainerRef.current) return;
 
-    // 清除现有内容
-    cleanupWriters();
+    // 清除笔画网格容器的内容，但保留主writer实例
+    if (strokeGridsContainerRef.current) {
+      strokeGridsContainerRef.current.innerHTML = '';
+    }
 
     try {
       const charData = await HanziWriter.loadCharacterData(currentCharacter);
       const strokeCount = charData.strokes.length;
+
+      // 确保主writer实例存在
+      if (!writers[0]) {
+        const mainWriter = HanziWriter.create(containerRef.current, currentCharacter, {
+          width: 300,
+          height: 300,
+          padding: 5,
+          showOutline: true,
+          strokeAnimationSpeed: 1,
+          delayBetweenStrokes: 500,
+        });
+        setWriters([mainWriter]);
+      }
 
       // 为每个阶段创建一个网格
       for (let i = 0; i < strokeCount; i++) {
@@ -494,16 +616,48 @@ const CharacterLearning: React.FC = () => {
     setCurrentCharacter('字');
   };
 
+  const handleClear = () => {
+    setInputValue('');
+    setCurrentCharacter('字');
+  };
+
+  const fetchDictionaryData = async (char: string) => {
+    setIsLoading(true);
+    try {
+      const data = await queryOllama(char);
+      setDictionaryData(data);
+    } catch (error) {
+      console.error('Error fetching dictionary data:', error);
+      setDictionaryData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentCharacter) {
+      fetchDictionaryData(currentCharacter);
+    }
+  }, [currentCharacter]);
+
   return (
     <Container>
       <h1>汉字学习</h1>
-      <Input
-        type="text"
-        placeholder="输入汉字..."
-        onChange={handleCharacterChange}
-        value={inputValue}
-        autoComplete="off"
-      />
+      <InputContainer>
+        <Input
+          type="text"
+          placeholder="输入汉字..."
+          onChange={handleCharacterChange}
+          value={inputValue}
+          autoComplete="off"
+        />
+        <ClearButton 
+          onClick={handleClear}
+          disabled={!inputValue || inputValue === '字'}
+        >
+          清空
+        </ClearButton>
+      </InputContainer>
       {inputValue.length > 1 && (
         <div style={{ color: '#ff4081', marginBottom: '1rem', fontSize: '0.9rem' }}>
           请输入单个汉字
@@ -548,6 +702,42 @@ const CharacterLearning: React.FC = () => {
         </ButtonGroup>
         <StrokeGridsContainer ref={strokeGridsContainerRef} />
       </WriterContainer>
+      <DictionarySection>
+        <h2>词典释义</h2>
+        {isLoading ? (
+          <div style={{ textAlign: 'center' }}>
+            <LoadingSpinner />
+          </div>
+        ) : dictionaryData ? (
+          <DictionaryContent>
+            <div className="pinyin">{dictionaryData.pinyin}</div>
+            <h3>释义</h3>
+            <ul className="meanings">
+              {dictionaryData.meanings.map((meaning, index) => (
+                <li key={index}>{meaning}</li>
+              ))}
+            </ul>
+            <h3>字源</h3>
+            <div className="etymology">{dictionaryData.etymology}</div>
+            <h3>常用词组</h3>
+            <div className="examples">
+              {dictionaryData.examples.map((example, index) => (
+                <span key={index}>{example}</span>
+              ))}
+            </div>
+            {dictionaryData.components && (
+              <div className="components">
+                <h3>字形结构</h3>
+                <p>{dictionaryData.components}</p>
+              </div>
+            )}
+          </DictionaryContent>
+        ) : (
+          <div style={{ textAlign: 'center', color: '#757575' }}>
+            无法获取词典数据
+          </div>
+        )}
+      </DictionarySection>
     </Container>
   );
 };

@@ -126,3 +126,5 @@ chinese-learning/
 - [hanzi-writer](https://github.com/chanind/hanzi-writer) - 优秀的汉字书写动画库
 - [React](https://reactjs.org/) - 用户界面构建库
 - [Vite](https://vitejs.dev/) - 现代前端构建工具
+
+export OPENROUTER_API_KEY=your_api_key_here

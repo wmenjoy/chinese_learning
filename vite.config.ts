@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    open: true
+    open: true,
+    host: '0.0.0.0'  // 允许局域网访问
   },
   build: {
     outDir: 'dist',

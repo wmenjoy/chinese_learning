@@ -2,96 +2,145 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { theme } from '../styles/theme';
+import {
+  PageContainer,
+  PageTitle,
+  Grid,
+  Card,
+  IconWrapper,
+  Badge
+} from '../components/common';
 
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-`;
-
-const Title = styled.h1`
-  text-align: center;
-  color: #424242;
-  margin-bottom: 3rem;
-  font-size: 2.5rem;
-`;
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
-  padding: 1rem;
-`;
-
-const Card = styled(motion(Link))`
-  background: white;
-  border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+const StyledCard = styled(Card)`
   text-decoration: none;
-  color: #424242;
-  transition: transform 0.2s;
+  color: ${theme.colors.text.primary};
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(
+      to right,
+      ${theme.colors.accent.pink},
+      ${theme.colors.accent.purple}
+    );
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+  }
+
+  &:hover::before {
+    transform: scaleX(1);
+  }
 
   h2 {
-    margin: 1rem 0;
-    color: #424242;
+    font-size: ${theme.typography.fontSize.xl};
+    margin: ${theme.spacing.md} 0;
+    font-family: ${theme.typography.fontFamily.decorative};
   }
 
   p {
-    color: #757575;
-    margin-bottom: 1rem;
-  }
-
-  &:hover {
-    transform: translateY(-5px);
+    color: ${theme.colors.text.secondary};
+    margin-bottom: ${theme.spacing.md};
+    line-height: 1.6;
   }
 `;
 
-const Icon = styled.div`
-  font-size: 3rem;
-  margin-bottom: 1rem;
+const FloatingIcon = styled(IconWrapper)`
+  animation: ${theme.animations.float} infinite;
+  font-size: 4rem;
 `;
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
 
 const Home: React.FC = () => {
   return (
-    <Container>
-      <Title>汉字学习助手</Title>
+    <PageContainer>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <PageTitle>汉字学习助手</PageTitle>
+      </motion.div>
       <Grid>
-        <Card 
+        <StyledCard
+          as={Link}
           to="/character"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.1 }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <Icon>✍️</Icon>
+          <FloatingIcon>✍️</FloatingIcon>
           <h2>汉字学习</h2>
           <p>练习汉字书写，掌握笔顺规则</p>
-        </Card>
+          <Badge color="pink">互动练习</Badge>
+        </StyledCard>
 
-        <Card 
+        <StyledCard
+          as={Link}
           to="/dictionary"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.2 }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <Icon>📚</Icon>
+          <FloatingIcon>📚</FloatingIcon>
           <h2>汉字词典</h2>
           <p>查询汉字的读音、释义和字源</p>
-        </Card>
+          <Badge color="blue">智能查询</Badge>
+        </StyledCard>
 
-        <Card 
+        <StyledCard
+          as={Link}
           to="/pinyin"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.3 }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <Icon>🔤</Icon>
+          <FloatingIcon>🔤</FloatingIcon>
           <h2>拼音转换</h2>
           <p>将汉字转换为拼音，支持多种声调格式</p>
-        </Card>
+          <Badge color="green">实用工具</Badge>
+        </StyledCard>
+
+        <StyledCard
+          as={Link}
+          to="/chat"
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.4 }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <FloatingIcon>💬</FloatingIcon>
+          <h2>智能对话</h2>
+          <p>与AI助手进行中文学习对话</p>
+          <Badge color="purple">AI助手</Badge>
+        </StyledCard>
       </Grid>
-    </Container>
+    </PageContainer>
   );
 };
 

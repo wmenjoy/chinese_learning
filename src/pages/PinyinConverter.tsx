@@ -30,22 +30,52 @@ const Card = styled.div`
   margin-bottom: 2rem;
 `
 
-const Input = styled.textarea`
+const InputContainer = styled.div`
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+`;
+
+const ClearButton = styled.button`
+  background: #E0E0E0;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  align-self: flex-start;
+  font-size: 1rem;
+  color: #424242;
+  cursor: pointer;
+  transition: background 0.2s;
+  height: 42px;
+
+  &:hover {
+    background: #BDBDBD;
+  }
+
+  &:disabled {
+    background: #F5F5F5;
+    cursor: not-allowed;
+    color: #9E9E9E;
+  }
+`;
+
+const TextArea = styled.textarea`
+  flex: 1;
   width: 100%;
   min-height: 100px;
-  padding: 1rem;
+  padding: 0.75rem;
   border: 2px solid #FFD54F;
   border-radius: 0.5rem;
-  font-size: 1rem;
-  margin-bottom: 1rem;
+  font-size: 1.25rem;
   resize: vertical;
-
+  
   &:focus {
     outline: none;
     border-color: #FFC107;
     box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
   }
-`
+`;
 
 const OptionsContainer = styled.div`
   display: flex;
@@ -191,16 +221,30 @@ const PinyinConverter: React.FC = () => {
     setTimeout(handleConvert, 0);
   };
 
+  const handleClear = () => {
+    setText('');
+    setResults([]);
+  };
+
   return (
     <PageContainer>
       <Container>
         <Title>拼音转换</Title>
         <Card>
-          <Input
-            value={text}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
-            placeholder="请输入汉字..."
-          />
+          <h1>拼音转换</h1>
+          <InputContainer>
+            <TextArea
+              placeholder="输入汉字..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            <ClearButton 
+              onClick={handleClear}
+              disabled={!text}
+            >
+              清空
+            </ClearButton>
+          </InputContainer>
           <OptionsContainer>
             <Option>
               <input
