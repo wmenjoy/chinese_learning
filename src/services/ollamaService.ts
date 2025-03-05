@@ -1,14 +1,15 @@
 import axios from 'axios';
+import { OllamaModel } from '../types/models';
 
 const OLLAMA_API_URL = 'http://192.168.50.41:11434/api';
 
 // 支持的模型列表
-export const SUPPORTED_MODELS = {
+export const SUPPORTED_MODELS: Record<OllamaModel, string> = {
   'deepseek-r1:70b': 'DeepSeek r1 70B',
   'llama3:latest': 'LLaMA3 Latest'
 } as const;
 
-export type SupportedModel = keyof typeof SUPPORTED_MODELS;
+export type { OllamaModel };
 
 interface OllamaResponse {
   model: string;
@@ -45,7 +46,7 @@ const fixIncompleteJson = (jsonStr: string): string => {
 
 export const queryOllama = async (
   character: string, 
-  model: SupportedModel = 'llama3:latest'
+  model: OllamaModel = 'llama3:latest'
 ): Promise<CharacterExplanation> => {
   try {
     const prompt = `你是一个专业的汉字词典API。请以严格的JSON格式返回汉字"${character}"的信息。

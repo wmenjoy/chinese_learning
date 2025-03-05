@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import HanziWriter from 'hanzi-writer';
-import { queryOllama, CharacterExplanation, SUPPORTED_MODELS, SupportedModel } from '../services/ollamaService';
+import { queryOllama, CharacterExplanation, SUPPORTED_MODELS } from '../services/ollamaService';
+import { OllamaModel } from '../types/models';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -237,7 +238,7 @@ const CharacterDictionary: React.FC = () => {
   const [dictionaryData, setDictionaryData] = useState<CharacterExplanation | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<SupportedModel>('llama3:latest');
+  const [selectedModel, setSelectedModel] = useState<OllamaModel>('llama3:latest');
   const writerContainerRef = useRef<HTMLDivElement>(null);
 
   // 清理writer实例的函数
@@ -353,7 +354,7 @@ const CharacterDictionary: React.FC = () => {
       </InputContainer>
       <ModelSelect
         value={selectedModel}
-        onChange={(e) => setSelectedModel(e.target.value as SupportedModel)}
+        onChange={(e) => setSelectedModel(e.target.value as OllamaModel)}
       >
         {Object.entries(SUPPORTED_MODELS).map(([value, label]) => (
           <option key={value} value={value}>
