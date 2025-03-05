@@ -6,10 +6,8 @@ declare module 'hanzi-writer' {
     showOutline?: boolean;
     strokeAnimationSpeed?: number;
     delayBetweenStrokes?: number;
-    radicalColor?: string;
     strokeColor?: string;
-    outlineColor?: string;
-    highlightColor?: string;
+    radicalColor?: string;
   }
 
   interface QuizOptions {
@@ -17,15 +15,31 @@ declare module 'hanzi-writer' {
     onComplete?: () => void;
   }
 
-  export default class HanziWriter {
-    constructor(element: HTMLElement | string, character: string, options?: HanziWriterOptions);
-    
-    static create(element: HTMLElement | string, character: string, options?: HanziWriterOptions): HanziWriter;
-    
-    quiz(options?: QuizOptions): void;
-    hideCharacter(): void;
-    showCharacter(): void;
-    animateCharacter(): void;
-    setCharacter(character: string): void;
+  interface CharacterData {
+    strokes: string[];
   }
+
+  interface ScalingTransform {
+    transform: string;
+    scale: number;
+  }
+
+  class HanziWriter {
+    static create(element: HTMLElement, character: string, options?: HanziWriterOptions): HanziWriter;
+    static loadCharacterData(character: string): Promise<CharacterData>;
+    static getScalingTransform(width: number, height: number): ScalingTransform;
+    
+    constructor(element: HTMLElement, character: string, options?: HanziWriterOptions);
+    
+    animateCharacter(): void;
+    animateStroke(strokeNum: number): Promise<void>;
+    showCharacter(): void;
+    hideCharacter(): void;
+    setCharacter(character: string): void;
+    showStroke(strokeNum: number): void;
+    quiz(options: QuizOptions): void;
+    destroy(): void;
+  }
+
+  export default HanziWriter;
 } 

@@ -158,6 +158,14 @@ const CharacterDictionary: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const writerContainerRef = useRef<HTMLDivElement>(null);
 
+  // 清理writer实例的函数
+  const cleanupWriter = () => {
+    if (writerContainerRef.current) {
+      writerContainerRef.current.innerHTML = '';
+    }
+    setWriter(null);
+  };
+
   useEffect(() => {
     const fetchCharacterData = async () => {
       if (!character) {
@@ -178,34 +186,24 @@ const CharacterDictionary: React.FC = () => {
   }, [character]);
 
   useEffect(() => {
-    if (writerContainerRef.current) {
+    if (writerContainerRef.current && character) {
       // 清理旧的writer实例
-      if (writer) {
-        writer.setCharacter(character);
-      } else if (character) {
-        // 确保容器是空的
-        writerContainerRef.current.innerHTML = '';
-        
-        // 创建新的writer实例
-        const newWriter = HanziWriter.create(writerContainerRef.current, character, {
-          width: 300,
-          height: 300,
-          padding: 5,
-          showOutline: true,
-          strokeAnimationSpeed: 1,
-          delayBetweenStrokes: 500,
-        });
-        setWriter(newWriter);
-      }
+      cleanupWriter();
+      
+      // 创建新的writer实例
+      const newWriter = HanziWriter.create(writerContainerRef.current, character, {
+        width: 300,
+        height: 300,
+        padding: 5,
+        showOutline: true,
+        strokeAnimationSpeed: 1,
+        delayBetweenStrokes: 500,
+      });
+      setWriter(newWriter);
     }
 
-    // 清理函数
-    return () => {
-      if (writerContainerRef.current) {
-        writerContainerRef.current.innerHTML = '';
-      }
-    };
-  }, [character, writer]);
+    return cleanupWriter;
+  }, [character]);
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -215,10 +213,7 @@ const CharacterDictionary: React.FC = () => {
     if (!value) {
       setCharacter('');
       setCharacterData(null);
-      if (writerContainerRef.current) {
-        writerContainerRef.current.innerHTML = '';
-      }
-      setWriter(null);
+      cleanupWriter();
       return;
     }
     
@@ -229,13 +224,13 @@ const CharacterDictionary: React.FC = () => {
   };
 
   const handleAnimate = () => {
-    if (writer) {
+    if (writer && character) {
       writer.animateCharacter();
     }
   };
 
   const handlePractice = () => {
-    if (writer) {
+    if (writer && character) {
       writer.quiz({
         showOutline: true,
         onComplete: () => {
