@@ -5,6 +5,7 @@ import PinyinConverter from './pages/PinyinConverter'
 import CharacterDictionary from './pages/CharacterDictionary'
 import Chat from './pages/Chat'
 import ChineseIdiomGame from './pages/ChineseIdiomGame'
+import ChineseIdiomPuzzle from './pages/ChineseIdiomPuzzle'
 
 const router = {
   future: {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/dictionary" element={<CharacterDictionary />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/game" element={<ChineseIdiomGame />} />
+        <Route path="/idiom-puzzle" element={<ChineseIdiomPuzzle />} />
       </Routes>
     </Router>
   )
