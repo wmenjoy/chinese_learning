@@ -332,33 +332,35 @@ const ChineseIdiomPuzzle: React.FC = () => {
 
     console.log('Completed cells:', { horizontal: xx, vertical: yy });
 
-    const newIdiomMap = [...idiomMap];
     if (xx.length === 4) {
       console.log('Horizontal line completed');
       xx.forEach(index => {
-        const item = newIdiomMap[index];
-        newIdiomMap[index] = {
+        const item = idiomMap[index];
+        idiomMap[index] = {
           ...item,
           type: 4,
-          txt: item.ans?.c || item.txt
+          txt: item.ans?.c || item.txt,
+          ans: item.ans
         };
       });
     }
     if (yy.length === 4) {
       console.log('Vertical line completed');
       yy.forEach(index => {
-        const item = newIdiomMap[index];
-        newIdiomMap[index] = {
+        const item = idiomMap[index];
+        idiomMap[index] = {
           ...item,
           type: 4,
-          txt: item.ans?.c || item.txt
+          txt: item.ans?.c || item.txt,
+          ans: item.ans
         };
       });
     }
-    setGameState(prev => ({
-      ...prev,
-      idiomMap: newIdiomMap
-    }));
+    console.log('Updated idiom map:', idiomMap);
+    setGameState({
+      ...gameState,
+      idiomMap
+    });
   };
 
   const reloadMap = () => {
@@ -382,7 +384,8 @@ const ChineseIdiomPuzzle: React.FC = () => {
         used: false,
         pos: ii.toString()
       }));
-      
+      console.log('New answer map:', newAnswerMap);
+      console.log('New idiom map:', newIdiomMap);
       setGameState({
         idiomMap: newIdiomMap,
         answerMap: newAnswerMap
@@ -426,34 +429,29 @@ const ChineseIdiomPuzzle: React.FC = () => {
 
     try {
       const { idiomMap, answerMap } = gameState;
-      const newAnswerMap = [...answerMap];
-      const newIdiomMap = [...idiomMap];
-      const currentCell = newIdiomMap[cursorIndex];
+      const currentCell = idiomMap[cursorIndex];
       currentCell.txt = item.c;
       console.log('Current cell state before update:', { currentCell, cursorIndex });
 
       // 如果当前格子已经有答案，先恢复之前的答案状态
       if (currentCell.ans) {
-        const oldAnswerIndex = newAnswerMap.findIndex(a => a.i === currentCell.ans?.i);
+        const oldAnswerIndex = answerMap.findIndex(a => a.i === currentCell.ans?.i);
         console.log('Restoring previous answer:', { oldAnswerIndex, previousAnswer: currentCell.ans });
         if (oldAnswerIndex !== -1) {
           // 完全恢复原答案的状态
-          newAnswerMap[oldAnswerIndex] = {
-            ...newAnswerMap[oldAnswerIndex],
-            used: false
-          };
+          answerMap[oldAnswerIndex].used = false;
         }
       }
 
       // 更新答案状态
-      const answerIndex = newAnswerMap.findIndex(a => a.i === item.i);
+      const answerIndex = answerMap.findIndex(a => a.i === item.i);
       console.log('Updating answer state:', { answerIndex, newAnswer: item });
       if (answerIndex !== -1) {
-        newAnswerMap[answerIndex] = { ...item, used: true };
+        answerMap[answerIndex].used = true;
       }
 
       // 更新当前格子
-      newIdiomMap[cursorIndex] = {
+      idiomMap[cursorIndex] = {
         ...currentCell,
         txt: item.c,
         type: 3,
@@ -463,13 +461,14 @@ const ChineseIdiomPuzzle: React.FC = () => {
           used: true
         }
       };
-      console.log('Updated cell state:', newIdiomMap[cursorIndex]);
+      console.log('Updated cell state:', idiomMap[cursorIndex]);
 
-      // 一次性更新所有状态
+      // 更新状态
       setGameState({
-        idiomMap: newIdiomMap,
-        answerMap: newAnswerMap
+        idiomMap,
+        answerMap
       });
+
       setCursorIndex(-1);
 
       // 检查是否完成

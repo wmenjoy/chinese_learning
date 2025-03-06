@@ -126,14 +126,13 @@ const Home: React.FC = () => {
           <p>趣味成语填字游戏，提升成语掌握</p>
           <Badge color="yellow">趣味游戏</Badge>
         </StyledCard>
-      </Grid>
-      <GameGrid>
-        <GameCard to="/idiom-puzzle">
+        <StyledCard to="/idiom-puzzle">
+        <FloatingIcon>🧩</FloatingIcon>
           <h2>成语拼图</h2>
           <p>趣味横向成语拼图游戏</p>
           <Badge color="yellow">趣味游戏</Badge>
-        </GameCard>
-      </GameGrid>
+        </StyledCard>
+      </Grid>
     </PageContainer>
   );
 };
