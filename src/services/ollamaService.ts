@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { OllamaModel } from '../types/models';
-
-const OLLAMA_API_URL = 'http://192.168.50.41:11434/api';
+import config from '../config/config';
 
 // 支持的模型列表
 export const SUPPORTED_MODELS: Record<OllamaModel, string> = {
+  'deepseek-r1:7b': "DeepSeek r1 7B",
   'deepseek-r1:70b': 'DeepSeek r1 70B',
   'llama3:latest': 'LLaMA3 Latest'
 } as const;
@@ -71,8 +71,7 @@ export const queryOllama = async (
   "components": "独体字"
 }`;
 
-    console.log(`Connecting to Ollama API using model: ${model}...`);
-    const response = await axios.post(`${OLLAMA_API_URL}/generate`, {
+    const response = await axios.post(`${config.ollamaApiUrl}/generate`, {
       model,
       prompt,
       stream: false
@@ -86,7 +85,6 @@ export const queryOllama = async (
       throw error;
     });
 
-    console.log('Received response from Ollama');
     const result = response.data as OllamaResponse;
     
     try {
@@ -95,7 +93,6 @@ export const queryOllama = async (
       if (jsonMatch) {
         // 修复并解析JSON
         const fixedJson = fixIncompleteJson(jsonMatch[0]);
-        console.log('Fixed JSON:', fixedJson);
         
         try {
           const parsedData = JSON.parse(fixedJson);

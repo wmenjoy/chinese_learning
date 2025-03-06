@@ -48,10 +48,10 @@ export const Card = styled(motion.div)`
   }
 `;
 
-export const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'accent' }>`
+export const Button = styled.button<{ $variant?: 'primary' | 'secondary' | 'accent' }>`
   background: ${props => 
-    props.variant === 'secondary' ? theme.colors.secondary :
-    props.variant === 'accent' ? theme.colors.accent.purple :
+    props.$variant === 'secondary' ? theme.colors.secondary :
+    props.$variant === 'accent' ? theme.colors.accent.purple :
     theme.colors.primary
   };
   color: white;

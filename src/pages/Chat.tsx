@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import { Markdown } from '../components/markdown';
 import { sendChatMessage, ChatMessage } from '../services/chatService';
 import { SUPPORTED_MODELS } from '../services/ollamaService';
 import { OPENROUTER_MODELS } from '../services/openRouterService';
@@ -196,14 +194,14 @@ const StyledSelect = styled(Select)`
   }
 `;
 
-const ThinkingModeButton = styled.button<{ active: boolean }>`
+const ThinkingModeButton = styled.button<{ $active: boolean }>`
   display: flex;
   align-items: center;
   gap: ${theme.spacing.sm};
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   border: 1px solid rgba(255, 188, 66, 0.2);
   border-radius: ${theme.borderRadius.medium};
-  background: ${props => props.active ? '#FFF9E6' : '#FFFFFF'};
+  background: ${props => props.$active ? '#FFF9E6' : '#FFFFFF'};
   color: #666;
   font-size: ${theme.typography.fontSize.sm};
   cursor: pointer;
@@ -225,7 +223,7 @@ const ThinkingModeButton = styled.button<{ active: boolean }>`
   svg {
     width: 16px;
     height: 16px;
-    color: ${props => props.active ? '#FFB23E' : '#666'};
+    color: ${props => props.$active ? '#FFB23E' : '#666'};
 
     @media (max-width: 428px) {
       width: 20px;
@@ -286,7 +284,7 @@ const StyledTextArea = styled(TextArea)`
   }
 `;
 
-const SendButton = styled(BaseButton)`
+const SendButton = styled(BaseButton)<{ $variant?: 'primary' }>`
   height: 40px;
   min-width: 40px;
   padding: 0;
@@ -398,6 +396,19 @@ const ThinkingContent = styled.div`
   font-size: ${theme.typography.fontSize.sm};
   color: #666;
   white-space: pre-wrap;
+
+  pre {
+    background: none;
+    padding: 0;
+    margin: 0;
+    border: none;
+  }
+
+  code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
 
   @media (max-width: 428px) {
     font-size: ${theme.typography.fontSize.xs};
@@ -536,11 +547,6 @@ interface ExtendedChatMessage extends ChatMessage {
   thinking?: string;
 }
 
-interface CodeProps {
-  className?: string;
-  children?: React.ReactNode;
-}
-
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -550,23 +556,8 @@ const Chat: React.FC = () => {
   const chatWindowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    console.log('Chat component mounted');
-    console.log('Initial window height:', window.innerHeight);
-    console.log('Initial document height:', document.documentElement.clientHeight);
     
-    const debugLayout = () => {
-      if (chatWindowRef.current) {
-        console.log('ChatWindow dimensions:', {
-          scrollHeight: chatWindowRef.current.scrollHeight,
-          clientHeight: chatWindowRef.current.clientHeight,
-          offsetHeight: chatWindowRef.current.offsetHeight
-        });
-      }
-    };
-
-    debugLayout();
     return () => {
-      console.log('Chat component unmounted');
     };
   }, []);
 
@@ -575,10 +566,6 @@ const Chat: React.FC = () => {
       if (chatWindowRef.current) {
         try {
           chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
-          console.log('Scrolled to bottom:', {
-            scrollTop: chatWindowRef.current.scrollTop,
-            scrollHeight: chatWindowRef.current.scrollHeight
-          });
         } catch (error) {
           console.error('Error scrolling to bottom:', error);
         }
@@ -590,22 +577,12 @@ const Chat: React.FC = () => {
 
     // 在键盘弹出/收起时也滚动到底部
     const handleVisibilityChange = () => {
-      console.log('Visibility changed:', {
-        hidden: document.hidden,
-        windowHeight: window.innerHeight,
-        documentHeight: document.documentElement.clientHeight
-      });
       if (!document.hidden) {
         setTimeout(scrollToBottom, 100);
       }
     };
 
     const handleResize = () => {
-      console.log('Window resized:', {
-        innerHeight: window.innerHeight,
-        outerHeight: window.outerHeight,
-        clientHeight: document.documentElement.clientHeight
-      });
       scrollToBottom();
     };
 
@@ -621,11 +598,6 @@ const Chat: React.FC = () => {
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    console.log('Sending message:', {
-      inputValue,
-      isLoading,
-      currentMessagesCount: messages.length
-    });
 
     try {
       // 在发送消息时立即滚动到底部
@@ -667,7 +639,6 @@ const Chat: React.FC = () => {
         useThinkingMode,
         {
           onContent: (content: string) => {
-            console.log('Received content chunk:', { length: content.length });
             currentContent += content;
             setMessages(prev => {
               const updated = [...prev];
@@ -679,7 +650,6 @@ const Chat: React.FC = () => {
             });
           },
           onThinking: (thinking: string) => {
-            console.log('Received thinking update:', { length: thinking.length });
             if (useThinkingMode) {
               currentThinking = thinking;
               setMessages(prev => {
@@ -697,7 +667,6 @@ const Chat: React.FC = () => {
             throw error;
           },
           onComplete: () => {
-            console.log('Chat stream completed');
             setIsLoading(false);
           }
         }
@@ -723,11 +692,6 @@ const Chat: React.FC = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    console.log('Key pressed:', {
-      key: e.key,
-      shiftKey: e.shiftKey,
-      inputValue: inputValue.length
-    });
     
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -760,29 +724,30 @@ const Chat: React.FC = () => {
               >
                 <MessageContent>
                   <MarkdownContent>
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw]}
-                      components={{
-                        code: ({ className, children }: CodeProps) => (
-                          <code className={className}>
-                            {children}
-                          </code>
-                        )
-                      }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
+                    {(() => {
+                      try {
+                        return (
+                          <Markdown content={message.content} />
+                        );
+                      } catch (error) {
+                        console.error('Markdown rendering error:', error);
+                        return <div>{message.content}</div>;
+                      }
+                    })()}
                   </MarkdownContent>
                   {message.thinking && (
                     <ThinkingContent>
                       思考过程：
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeRaw]}
-                      >
-                        {message.thinking}
-                      </ReactMarkdown>
+                      {(() => {
+                        try {
+                          return (
+                            <Markdown content={message.thinking} />
+                          );
+                        } catch (error) {
+                          console.error('Thinking markdown rendering error:', error);
+                          return <div>{message.thinking}</div>;
+                        }
+                      })()}
                     </ThinkingContent>
                   )}
                   <Timestamp>{formatTimestamp(message.timestamp)}</Timestamp>
@@ -823,7 +788,7 @@ const Chat: React.FC = () => {
               </optgroup>
             </StyledSelect>
             <ThinkingModeButton
-              active={useThinkingMode}
+              $active={useThinkingMode}
               onClick={() => setUseThinkingMode(!useThinkingMode)}
               title={useThinkingMode ? "关闭思考模式" : "开启思考模式"}
             >
@@ -843,7 +808,7 @@ const Chat: React.FC = () => {
             <SendButton
               onClick={handleSend}
               disabled={!inputValue.trim() || isLoading}
-              variant="primary"
+              $variant="primary"
               title="发送消息"
             >
               <SendIcon />

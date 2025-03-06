@@ -5,9 +5,15 @@ import PinyinConverter from './pages/PinyinConverter'
 import CharacterDictionary from './pages/CharacterDictionary'
 import Chat from './pages/Chat'
 
+const router = {
+  future: {
+    v7_startTransition: true,
+  },
+};
+
 function App() {
   return (
-    <Router>
+    <Router {...router}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/character" element={<CharacterLearning />} />

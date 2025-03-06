@@ -1,8 +1,8 @@
-export type OllamaModel = 'deepseek-r1:70b' | 'llama3:latest';
+export type OllamaModel = 'deepseek-r1:70b' | 'llama3:latest' | 'deepseek-r1:7b';
 export type OpenRouterModel = 
   | 'deepseek-chat-free'
   | 'deepseek-r1-free'
-  | 'gemini-2-flash-lite';
+  | 'gemini-2-flash-lite-free';
 
 export type SupportedModel = OllamaModel | OpenRouterModel;
 

@@ -1,6 +1,5 @@
 import { OpenRouterModel, streamOpenRouterChat } from './openRouterService';
-
-const OLLAMA_API_URL = 'http://192.168.50.41:11434/api';
+import config from '../config/config';
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'thinking';
@@ -48,16 +47,8 @@ export const sendChatMessage = async (
   callbacks?: StreamCallbacks
 ): Promise<string> => {
   try {
-    console.log('sendChatMessage called:', {
-      model,
-      messageLength: message.length,
-      contextLength: context?.length || 0,
-      useThinkingMode
-    });
-    
     // Check if it's an OpenRouter model
     if (model.includes('-free')) {
-      console.log('Using OpenRouter model:', model);
       return new Promise((resolve, reject) => {
         let finalResponse = '';
         
@@ -68,25 +59,15 @@ export const sendChatMessage = async (
           useThinkingMode,
           {
             onContent: (content) => {
-              console.log('OpenRouter content received:', {
-                contentLength: content.length,
-                totalLength: finalResponse.length
-              });
               finalResponse += content;
               callbacks?.onContent(content);
             },
             onThinking: (thinking) => {
               if (thinking) {
-                console.log('OpenRouter thinking received:', {
-                  thinkingLength: thinking.length
-                });
                 callbacks?.onThinking?.(thinking);
               }
             },
             onComplete: () => {
-              console.log('OpenRouter stream completed:', {
-                finalResponseLength: finalResponse.length
-              });
               callbacks?.onComplete();
               resolve(finalResponse);
             },
@@ -102,18 +83,15 @@ export const sendChatMessage = async (
     
     // Check if Ollama API is available
     try {
-      console.log('Checking Ollama API availability...');
-      const healthCheck = await fetch(`${OLLAMA_API_URL}/version`);
+      const healthCheck = await fetch(`${config.ollamaApiUrl}/version`);
       if (!healthCheck.ok) {
         throw new Error('Ollama API is not available');
       }
-      console.log('Ollama API is available');
     } catch (error) {
       console.error('Ollama API health check failed:', error);
-      throw new Error('Ollama API is not accessible. Please make sure the Ollama server is running and accessible at ' + OLLAMA_API_URL);
+      throw new Error('Ollama API is not accessible. Please make sure the Ollama server is running and accessible at ' + config.ollamaApiUrl);
     }
 
-    console.log('Using Ollama model:', model);
     let prompt;
     if (useThinkingMode) {
       prompt = context 
@@ -125,12 +103,7 @@ export const sendChatMessage = async (
         : message;
     }
 
-    console.log('Sending request to Ollama:', {
-      model,
-      promptLength: prompt.length
-    });
-
-    const response = await fetch(`${OLLAMA_API_URL}/generate`, {
+    const response = await fetch(`${config.ollamaApiUrl}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -140,11 +113,6 @@ export const sendChatMessage = async (
         prompt,
         stream: true
       }),
-    });
-
-    console.log('Ollama response status:', {
-      status: response.status,
-      statusText: response.statusText
     });
 
     if (!response.ok) {
@@ -161,7 +129,6 @@ export const sendChatMessage = async (
       throw new Error('Response body is not readable');
     }
 
-    console.log('Starting to read Ollama stream...');
     const decoder = new TextDecoder();
     let buffer = '';
     let accumulatedContent = '';
@@ -173,19 +140,12 @@ export const sendChatMessage = async (
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          console.log('Ollama stream completed:', {
-            totalChunks: chunkCount,
-            finalContentLength: accumulatedContent.length
-          });
+    
           break;
         }
 
         chunkCount++;
         const chunk = decoder.decode(value, { stream: true });
-        console.log(`Processing Ollama chunk #${chunkCount}:`, {
-          chunkSize: chunk.length,
-          bufferSize: buffer.length
-        });
         buffer += chunk;
 
         while (true) {
@@ -202,21 +162,12 @@ export const sendChatMessage = async (
               
               if (content) {
                 accumulatedContent += content;
-                console.log('Received Ollama content:', {
-                  contentLength: content.length,
-                  isThinking,
-                  totalLength: accumulatedContent.length
-                });
 
                 if (useThinkingMode) {
-                  if (content.includes('<think>')) {
-                    console.log('Entering Ollama thinking mode');
+                  if (content.includes('```thinking')) {
                     isThinking = true;
                     thinkingContent = '';
-                  } else if (content.includes('</think>')) {
-                    console.log('Exiting Ollama thinking mode:', {
-                      thinkingContentLength: thinkingContent.length
-                    });
+                  } else if (content.includes('```')) {
                     isThinking = false;
                     callbacks?.onThinking?.(thinkingContent);
                   } else if (isThinking) {
@@ -231,7 +182,6 @@ export const sendChatMessage = async (
               }
 
               if (parsed.done) {
-                console.log('Ollama response completed');
                 callbacks?.onComplete();
                 return accumulatedContent;
               }
@@ -252,7 +202,6 @@ export const sendChatMessage = async (
       });
       throw streamError;
     } finally {
-      console.log('Cleaning up Ollama stream reader');
       reader.cancel();
       callbacks?.onComplete();
     }
