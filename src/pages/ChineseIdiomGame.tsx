@@ -119,7 +119,7 @@ const ChineseIdiomGame: React.FC = () => {
     setUserInput(newInput);
   };
 
-  const handleCompositionEnd = (index: number, e: React.CompositionEvent<HTMLInputElement>) => {
+  const handleCompositionEnd = (index: number) => {
     // 如果不是最后一个格子，自动跳转到下一个
     if (index < 3) {
       const nextInput = document.querySelector(
@@ -169,7 +169,7 @@ const ChineseIdiomGame: React.FC = () => {
               data-index={index}
               value={char}
               onChange={(e) => handleInputChange(index, e)}
-              onCompositionEnd={(e) => handleCompositionEnd(index, e)}
+              onCompositionEnd={() => handleCompositionEnd(index)}
               maxLength={1}
             />
           ))}
