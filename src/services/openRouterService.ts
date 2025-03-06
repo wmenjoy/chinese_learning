@@ -1,5 +1,6 @@
 import config from '../config/config';
 import { OpenRouterModel, StreamCallbacks } from '../types/models';
+import { CharacterExplanation } from './ollamaService';
 
 export type { OpenRouterModel };
 
@@ -226,5 +227,62 @@ export async function streamOpenRouterChat(
     });
     callbacks.onError(error instanceof Error ? error : new Error('Unknown error'));
     throw error;
+  }
+}
+
+const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+export async function queryOpenRouter(character: string): Promise<CharacterExplanation> {
+  const prompt = `请分析汉字"${character}"，并按以下JSON格式返回信息：
+{
+  "pinyin": "拼音（带声调）",
+  "meanings": [
+    {
+      "definition": "含义1",
+      "examples": ["例句1（要包含汉字和拼音）", "例句2（要包含汉字和拼音）"]
+    },
+    {
+      "definition": "含义2",
+      "examples": ["例句1（要包含汉字和拼音）", "例句2（要包含汉字和拼音）"]
+    }
+  ],
+  "etymology": "字源简介",
+  "examples": ["常用词组1", "常用词组2"],
+  "components": "字形结构分析"
+}
+只返回JSON格式的数据，不要有其他文字。不要使用markdown格式。每个例句都要包含汉字和拼音。`;
+
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${config.openrouterApiKey}`,
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'Chinese Learning Assistant',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'deepseek/deepseek-r1:free',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch data from OpenRouter');
+  }
+
+  const data = await response.json();
+  try {
+    const content = data.choices[0].message.content;
+    // Clean the response by removing markdown code blocks and any extra whitespace
+    const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
+    return JSON.parse(cleanedContent);
+  } catch (error) {
+    console.error('Error parsing response:', error);
+    throw new Error('Invalid response format from OpenRouter');
   }
 } 

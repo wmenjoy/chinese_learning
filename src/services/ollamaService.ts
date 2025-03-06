@@ -19,10 +19,13 @@ interface OllamaResponse {
 
 export interface CharacterExplanation {
   pinyin: string;
-  meanings: string[];
+  meanings: {
+    definition: string;
+    examples: string[];
+  }[];
   etymology: string;
   examples: string[];
-  components?: string;
+  components: string;
 }
 
 const fixIncompleteJson = (jsonStr: string): string => {
@@ -128,7 +131,7 @@ export const queryOllama = async (
       // 尝试构建部分数据
       const fallbackData: CharacterExplanation = {
         pinyin: '获取失败',
-        meanings: ['无法解析释义'],
+        meanings: [{ definition: '无法解析释义', examples: [] }],
         etymology: '暂无字源信息',
         examples: [],
         components: '解析失败'
@@ -151,7 +154,7 @@ export const queryOllama = async (
             .map(m => m.trim().replace(/['"]/g, ''))
             .filter(m => m);
           if (meanings.length > 0) {
-            fallbackData.meanings = meanings;
+            fallbackData.meanings = meanings.map(m => ({ definition: m, examples: [] }));
           }
         }
       }

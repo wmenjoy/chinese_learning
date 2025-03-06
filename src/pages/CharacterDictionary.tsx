@@ -428,7 +428,16 @@ const CharacterDictionary: React.FC = () => {
                 <p>{dictionaryData.pinyin}</p>
                 <h3>释义</h3>
                 {dictionaryData.meanings.map((meaning, index) => (
-                  <p key={index}>{index + 1}. {meaning}</p>
+                  <div key={index}>
+                    <p>{index + 1}. {meaning.definition}</p>
+                    {meaning.examples.length > 0 && (
+                      <ul style={{ marginLeft: '2rem', marginTop: '0.5rem' }}>
+                        {meaning.examples.map((example, exIndex) => (
+                          <li key={exIndex}>{example}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 ))}
                 <h3>字源</h3>
                 <EtymologySection>

@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import HanziWriter from 'hanzi-writer';
-import { queryOllama, CharacterExplanation } from '../services/ollamaService';
+import { CharacterExplanation } from '../services/ollamaService';
+import { queryOpenRouter } from '../services/openRouterService';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -176,72 +177,164 @@ const STROKE_COLORS = [
 
 const DictionarySection = styled.div`
   margin-top: 2rem;
-  padding: 1rem;
+  padding: 1.5rem;
   background: white;
-  border-radius: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 1.2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 `;
 
 const DictionaryContent = styled.div`
   h3 {
-    color: #424242;
-    margin-bottom: 0.5rem;
-    font-size: 1.2rem;
+    color: #2C3E50;
+    margin: 1.5rem 0 1rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 1em;
+      background: #FFD54F;
+      margin-right: 0.8rem;
+      border-radius: 2px;
+    }
   }
 
   .pinyin {
     color: #FF4081;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
+    font-size: 1.4rem;
+    margin: 0.5rem 0 1.5rem;
+    padding: 0.5rem 1rem;
+    background: #FFF8E1;
+    border-radius: 0.5rem;
+    display: inline-block;
   }
 
   .meanings {
-    margin-bottom: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
     
     li {
-      margin-bottom: 0.5rem;
-      color: #616161;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: #FAFAFA;
+      border-radius: 0.8rem;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #F5F5F5;
+        transform: translateX(4px);
+      }
+
+      .definition {
+        font-weight: 500;
+        color: #2C3E50;
+        margin-bottom: 0.8rem;
+        font-size: 1.1rem;
+        border-left: 3px solid #4CAF50;
+        padding-left: 1rem;
+      }
+
+      .meaning-examples {
+        margin: 0.8rem 0 0 1rem;
+        padding: 0;
+        
+        li {
+          color: #546E7A;
+          font-size: 1rem;
+          margin: 0.5rem 0;
+          padding: 0.6rem 1rem;
+          background: white;
+          border-radius: 0.5rem;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          list-style-type: none;
+          position: relative;
+
+          &::before {
+            content: '例';
+            color: #90A4AE;
+            font-size: 0.8rem;
+            position: absolute;
+            left: -2rem;
+            top: 50%;
+            transform: translateY(-50%);
+          }
+        }
+      }
     }
   }
 
   .etymology {
-    background: #F5F5F5;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
-    color: #757575;
+    background: #F3F4F6;
+    padding: 1.2rem;
+    border-radius: 0.8rem;
+    color: #455A64;
+    line-height: 1.6;
+    position: relative;
+    margin: 1rem 0;
+    border-left: 4px solid #78909C;
   }
 
   .examples {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.8rem;
+    margin: 1rem 0;
     
     span {
       background: #E3F2FD;
-      padding: 0.3rem 0.6rem;
-      border-radius: 0.3rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.6rem;
       color: #1976D2;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      cursor: pointer;
+
+      &:hover {
+        background: #BBDEFB;
+        border-color: #90CAF9;
+        transform: translateY(-2px);
+      }
     }
   }
 
   .components {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #E0E0E0;
-    color: #616161;
+    margin-top: 1.5rem;
+    padding: 1.2rem;
+    border-top: 2px dashed #E0E0E0;
+    color: #37474F;
+    background: #FAFAFA;
+    border-radius: 0.8rem;
+
+    h3 {
+      margin-top: 0;
+    }
+
+    p {
+      line-height: 1.6;
+      margin: 0.5rem 0 0;
+    }
   }
 `;
 
 const LoadingSpinner = styled.div`
   display: inline-block;
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border: 3px solid #FFD54F;
   border-radius: 50%;
   border-top-color: transparent;
   animation: spin 1s linear infinite;
-  margin: 1rem auto;
+  margin: 2rem auto;
 
   @keyframes spin {
     to {
@@ -624,7 +717,7 @@ const CharacterLearning: React.FC = () => {
   const fetchDictionaryData = async (char: string) => {
     setIsLoading(true);
     try {
-      const data = await queryOllama(char);
+      const data = await queryOpenRouter(char);
       setDictionaryData(data);
     } catch (error) {
       console.error('Error fetching dictionary data:', error);
@@ -714,7 +807,16 @@ const CharacterLearning: React.FC = () => {
             <h3>释义</h3>
             <ul className="meanings">
               {dictionaryData.meanings.map((meaning, index) => (
-                <li key={index}>{meaning}</li>
+                <li key={index}>
+                  <div className="definition">{meaning.definition}</div>
+                  {meaning.examples.length > 0 && (
+                    <ul className="meaning-examples">
+                      {meaning.examples.map((example, exIndex) => (
+                        <li key={exIndex}>{example}</li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
               ))}
             </ul>
             <h3>字源</h3>
