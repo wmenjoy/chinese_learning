@@ -14,6 +14,18 @@ import {
   Select
 } from '../components/common';
 
+const isIOS = () => {
+  return [
+    'iPad Simulator',
+    'iPhone Simulator',
+    'iPod Simulator',
+    'iPad',
+    'iPhone',
+    'iPod'
+  ].includes(navigator.platform)
+  || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+};
+
 const ChatContainer = styled(PageContainer)`
   display: flex;
   flex-direction: column;
@@ -420,6 +432,11 @@ const MessageContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${theme.spacing.sm};
+  
+  ${isIOS() && `
+    white-space: pre-wrap;
+    word-break: break-word;
+  `}
 `;
 
 const MarkdownContent = styled.div`
@@ -554,6 +571,7 @@ const Chat: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [useThinkingMode, setUseThinkingMode] = useState(true);
   const chatWindowRef = useRef<HTMLDivElement>(null);
+  const [isIOSPlatform] = useState(() => isIOS());
 
   useEffect(() => {
     
@@ -726,9 +744,11 @@ const Chat: React.FC = () => {
                   <MarkdownContent>
                     {(() => {
                       try {
-                        return (
-                          <Markdown content={message.content} />
-                        );
+                        if (isIOSPlatform) {
+                          // On iOS, render plain text with line breaks
+                          return <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>;
+                        }
+                        return <Markdown content={message.content} />;
                       } catch (error) {
                         console.error('Markdown rendering error:', error);
                         return <div>{message.content}</div>;
@@ -740,9 +760,11 @@ const Chat: React.FC = () => {
                       思考过程：
                       {(() => {
                         try {
-                          return (
-                            <Markdown content={message.thinking} />
-                          );
+                          if (isIOSPlatform) {
+                            // On iOS, render plain text with line breaks
+                            return <div style={{ whiteSpace: 'pre-wrap' }}>{message.thinking}</div>;
+                          }
+                          return <Markdown content={message.thinking} />;
                         } catch (error) {
                           console.error('Thinking markdown rendering error:', error);
                           return <div>{message.thinking}</div>;

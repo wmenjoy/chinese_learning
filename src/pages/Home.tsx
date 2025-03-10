@@ -50,36 +50,6 @@ const FloatingIcon = styled(IconWrapper)`
   font-size: 4rem;
 `;
 
-const GameGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  padding: 2rem;
-`;
-
-const GameCard = styled(Link)`
-  background: #FFFBF5;
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
-  text-decoration: none;
-  color: #664022;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-
-  &:hover {
-    transform: translateY(-5px);
-  }
-
-  h2 {
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-  }
-
-  p {
-    color: #666;
-  }
-`;
 
 const Home: React.FC = () => {
   return (
